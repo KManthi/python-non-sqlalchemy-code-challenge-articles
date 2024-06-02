@@ -5,7 +5,11 @@ class Article:
         self.magazine = magazine
         self.title = title
         Article.all.append(self)
-        # self.author.add_article(self)
+        self.author._articles.append(self)
+        self.author._magazines.add(magazine)
+        self.magazine._articles.append(self)
+        self.magazine._contributors.add(author)
+        
     
     @property
     def title(self):
@@ -70,8 +74,10 @@ class Author:
 
     def add_article(self, magazine, title):
         article = Article(self, magazine, title)
-        self._articles.append(article)
-        self._magazines.add(magazine)
+        if article not in self._articles:
+            self._articles.append(article)
+        if magazine not in self._magazines:
+            self._magazines.add(magazine)
         return article
 
     def topic_areas(self):
@@ -80,11 +86,13 @@ class Author:
         return list(set(article.magazine.category for article in self._articles))
 
 class Magazine:
+    all = []
     def __init__(self, name, category):
         self.name = name
         self.category = category
         self._articles = []
         self._contributors = set()
+        Magazine.all.append(self)
 
     @property
     def name(self):
@@ -143,10 +151,9 @@ class Magazine:
             return None
         magazine_counts = {}
         for magazine in cls.all:
-            if magazine in magazine_counts:
-                magazine_counts[magazine] += 1
-            else:
-                magazine_counts[magazine] = 1
+            magazine_counts[magazine] = len(magazine._articles)
+        if all(count == 0 for count in magazine_counts.values()):
+            return None
         top_magazine = max(magazine_counts, key=magazine_counts.get)
         return top_magazine
     
