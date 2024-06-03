@@ -1,15 +1,11 @@
 class Article:
     all = []
+
     def __init__(self, author, magazine, title):
         self.author = author
         self.magazine = magazine
         self.title = title
         Article.all.append(self)
-        self.author._articles.append(self)
-        self.author._magazines.add(magazine)
-        self.magazine._articles.append(self)
-        self.magazine._contributors.add(author)
-        
     
     @property
     def title(self):
@@ -48,16 +44,13 @@ class Article:
 class Author:
     def __init__(self, name):
         self.name = name
-        self._articles = []
-        self._magazines = set()
-
 
     @property
     def name(self):
         return self._name
     
     @name.setter
-    def name(self,name):
+    def name(self, name):
         if not isinstance(name, str):
             raise TypeError("Name must be a string.")
         if len(name) <= 0:
@@ -67,31 +60,25 @@ class Author:
         self._name = name
 
     def articles(self):
-        return self._articles
+        return [article for article in Article.all if article.author == self]
 
     def magazines(self):
-        return list(self._magazines)
+        return list({article.magazine for article in self.articles()})
 
     def add_article(self, magazine, title):
-        article = Article(self, magazine, title)
-        if article not in self._articles:
-            self._articles.append(article)
-        if magazine not in self._magazines:
-            self._magazines.add(magazine)
-        return article
+        return Article(self, magazine, title)
 
     def topic_areas(self):
-        if not self._articles:
+        if not self.articles():
             return None
-        return list(set(article.magazine.category for article in self._articles))
+        return list(set(article.magazine.category for article in self.articles()))
 
 class Magazine:
     all = []
+
     def __init__(self, name, category):
         self.name = name
         self.category = category
-        self._articles = []
-        self._contributors = set()
         Magazine.all.append(self)
 
     @property
@@ -115,24 +102,22 @@ class Magazine:
         if not isinstance(category, str):
             raise TypeError('Category must be a string.')
         if len(category) <= 0:
-            raise ValueError('Category must be longer than 0  characters.')
+            raise ValueError('Category must be longer than 0 characters.')
         self._category = category
 
     def articles(self):
-        return self._articles
+        return [article for article in Article.all if article.magazine == self]
 
     def contributors(self):
-        return list(self._contributors)
+        return list({article.author for article in self.articles()})
 
     def article_titles(self):
-        if self._articles:
-            return [article.title for article in self._articles]
-        else:
-            return None
+        titles = [article.title for article in self.articles()]
+        return titles if titles else None
 
     def contributing_authors(self):
         author_counts = {}
-        for article in self._articles:
+        for article in self.articles():
             author = article.author
             if author in author_counts:
                 author_counts[author] += 1
@@ -140,21 +125,14 @@ class Magazine:
                 author_counts[author] = 1
         
         contributing_authors = [author for author, count in author_counts.items() if count > 2]
-        if contributing_authors:
-            return contributing_authors
-        else: 
-            return None
+        return contributing_authors if contributing_authors else None
         
     @classmethod
     def top_publisher(cls):
         if not cls.all:
             return None
-        magazine_counts = {}
-        for magazine in cls.all:
-            magazine_counts[magazine] = len(magazine._articles)
+        magazine_counts = {magazine: len(magazine.articles()) for magazine in cls.all}
         if all(count == 0 for count in magazine_counts.values()):
             return None
         top_magazine = max(magazine_counts, key=magazine_counts.get)
         return top_magazine
-    
-
